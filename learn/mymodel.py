@@ -1,3 +1,9 @@
+"""
+@author  starrysky
+@date    2020/08/16
+@details 定义网络结构, 训练模型, 导出模型参数
+"""
+
 import os
 import sys
 import time
@@ -18,8 +24,9 @@ trans = transforms.ToTensor()
 
 def default_loader(path):
     """
-    定义读取图片的格式
-    28*28的单通道灰度图
+    定义读取图片的格式为28*28的单通道灰度图
+    :param path: 图片路径
+    :return: 图片
     """
     return Image.open(path).convert('L').resize((28, 28))
 
@@ -31,13 +38,9 @@ class MyDataset(Dataset):
 
     def __init__(self, csv_path, transform=None, loader=default_loader):
         """
-        根据描述文件提取数据集信息
-        Args:
-            txt: 描述文件的路径
-            transform: 转换后的Tensor格式
-            loader: 图片加载的格式
-        Returns:
-            无
+        :param csv_path: 文件路径
+        :param transform: 转后后的Tensor格式
+        :param loader: 图片加载方式
         """
         super(MyDataset, self).__init__()
         df = pd.read_csv(csv_path, engine="python", encoding="utf-8")
@@ -109,11 +112,12 @@ class LeNet(nn.Module):
 def evaluate_accuracy(data_iter, net, device=None):
     """
     评估模型, GPU加速运算
-    Args:
-        data_iter: 测试集迭代器
-        net: 待评估模型
-        device: 训练设备
+    :param data_iter: 测试集迭代器
+    :param net: 待评估模型
+    :param device: 训练设备
+    :return: 正确率
     """
+
     # 未指定训练设备的话就使用 net 的 device
     if device is None and isinstance(net, nn.Module):
         device = list(net.parameters())[0].device
@@ -126,12 +130,6 @@ def evaluate_accuracy(data_iter, net, device=None):
                 acc_sum += (net(x.to(device)).argmax(dim=1) == y.to(device)).float().sum().cpu().item()
                 # 改回训练模式
                 net.train()
-            # else:
-            #     # 如果有 is_training 这个参数
-            #     if ("is_training" in net.__code__.co_varnames):
-            #         acc_sum += (net(x, is_training=False).argmax(dim=1) == y).float().sum().item()
-            #     else:
-            #         acc_sum += (net(x).argmax(dim=1) == y).float().sum().item()
             n += y.shape[0]
     return acc_sum / n
 
@@ -148,6 +146,7 @@ def train_model(net, train_iter, test_iter, loss_func, optimizer, device, num_ep
     :param num_epochs: 训练周期
     :return: 无
     """
+
     net = net.to(device)
     print("训练设备={0}".format(device))
     for i in range(num_epochs):
@@ -178,15 +177,15 @@ def train_model(net, train_iter, test_iter, loss_func, optimizer, device, num_ep
 
 if __name__ == '__main__':
     # %% 设置工作路径
-    print(os.getcwd())
+    # print(os.getcwd())
+    # os.chdir(os.getcwd() + "\learn")
     # 获取当前文件路径
-    os.chdir(os.getcwd() + "\learn")
     print(os.getcwd())
 
     # %% 超参数配置
 
     # 数据集元数据文件的路径
-    metadata_path = r"../素材/num/label.csv"
+    metadata_path = r"./素材/num/label.csv"
 
     # 训练设备
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -235,4 +234,4 @@ if __name__ == '__main__':
         train_model(net, train_iter, test_iter, loss_func, optimizer, device, num_epochs)
 
     # 保存训练后的模型数据
-    torch.save(net.state_dict(), "../model_param/state_dict.pt")
+    torch.save(net.state_dict(), "./model_param/state_dict.pt")
